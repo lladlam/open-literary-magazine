@@ -175,7 +175,7 @@
       <nav class="sidebar-nav" id="sidebarNav"></nav>
       <div class="sidebar-footer">
         <span id="sidebarUser"></span><br>
-        <a onclick="logout()">退出登录</a> · <a href="/">返回首页</a>
+        <a onclick="logout()">退出登录</a> · <a onclick="logoutAll()">登出全部</a> · <a href="/">返回首页</a>
       </div>
     </aside>
     <main class="main-content" id="mainContent"></main>
@@ -270,6 +270,15 @@
 
     async function logout() {
       try { await api('/api/logout', { method: 'POST' }); } catch {}
+      token = null;
+      currentUser = null;
+      localStorage.removeItem('token');
+      showLogin();
+    }
+
+    async function logoutAll() {
+      if (!confirm('确定要登出所有设备吗？')) return;
+      try { await api('/api/logout-all', { method: 'POST' }); } catch {}
       token = null;
       currentUser = null;
       localStorage.removeItem('token');

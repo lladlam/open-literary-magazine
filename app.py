@@ -3,15 +3,40 @@ import os
 import json
 import secrets
 import hashlib
+import time
+from collections import defaultdict
 from datetime import datetime, timedelta
 from functools import wraps
-from flask import Flask, request, jsonify, send_from_directory, send_file, g
+from flask import Flask, request, jsonify, send_from_directory, send_file, g, abort
 from flask_cors import CORS
 from database import get_db, init_db, hash_password, verify_password, is_legacy_password, migrate_password
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = secrets.token_hex(32)
-CORS(app)
+CORS(app, origins=['https://open.lladlam.top'])
+
+# ─── Rate limiter (in-memory) ───
+_login_attempts = defaultdict(list)
+RATE_LIMIT = 5
+RATE_WINDOW = 300  # 5 minutes
+
+def is_rate_limited(ip):
+    now = time.time()
+    _login_attempts[ip] = [t for t in _login_attempts[ip] if now - t < RATE_WINDOW]
+    if len(_login_attempts[ip]) >= RATE_LIMIT:
+        return True
+    _login_attempts[ip].append(now)
+    return False
+
+# ─── Security headers ───
+@app.after_request
+def set_security_headers(resp):
+    resp.headers['X-Content-Type-Options'] = 'nosniff'
+    resp.headers['X-Frame-Options'] = 'DENY'
+    resp.headers['X-XSS-Protection'] = '1; mode=block'
+    resp.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    resp.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.loli.net; font-src https://fonts.loli.net; img-src 'self' data: blob:; connect-src 'self'"
+    return resp
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -47,8 +72,6 @@ def validate_upload(f, category):
 
 def get_current_user():
     token = request.headers.get('Authorization', '').replace('Bearer ', '')
-    if not token:
-        token = request.args.get('token', '')
     if not token:
         return None
     db = get_db()
@@ -86,6 +109,9 @@ def role_required(*roles):
 
 @app.route('/api/login', methods=['POST'])
 def login():
+    ip = request.remote_addr
+    if is_rate_limited(ip):
+        return jsonify({'error': '登录尝试过于频繁，请5分钟后重试'}), 429
     data = request.json
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE username=?", (data.get('username', ''),)).fetchone()
@@ -119,7 +145,7 @@ def register():
     existing = db.execute("SELECT id FROM users WHERE username=?", (username,)).fetchone()
     if existing:
         db.close()
-        return jsonify({'error': '用户名已存在'}), 409
+        return jsonify({'error': '注册失败'}), 409
     pwd = hash_password(password)
     db.execute("INSERT INTO users (username, password, role) VALUES (?, ?, 'users')", (username, pwd))
     db.commit()
@@ -144,6 +170,15 @@ def logout():
     token = request.headers.get('Authorization', '').replace('Bearer ', '')
     db = get_db()
     db.execute("DELETE FROM sessions WHERE token=?", (token,))
+    db.commit()
+    db.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/logout-all', methods=['POST'])
+@login_required
+def logout_all():
+    db = get_db()
+    db.execute("DELETE FROM sessions WHERE user_id=?", (g.user['id'],))
     db.commit()
     db.close()
     return jsonify({'ok': True})
@@ -559,6 +594,7 @@ def update_user(user_id):
 
     if data.get('password'):
         db.execute("UPDATE users SET password=? WHERE id=?", (hash_password(data['password']), user_id))
+        db.execute("DELETE FROM sessions WHERE user_id=?", (user_id,))
     if data.get('role'):
         db.execute("UPDATE users SET role=? WHERE id=?", (data['role'], user_id))
     if 'banned' in data:
@@ -690,6 +726,9 @@ with get_db() as conn:
         expires_at TIMESTAMP NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id)
     )''')
+    conn.commit()
+    # Clean up expired sessions on startup
+    conn.execute("DELETE FROM sessions WHERE expires_at <= datetime('now')")
     conn.commit()
 
 if __name__ == '__main__':
