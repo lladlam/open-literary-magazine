@@ -662,7 +662,9 @@ def update_settings():
 
 @app.route('/admin')
 def admin_page():
-    return send_file('admin.html')
+    resp = send_file('admin.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return resp
 
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
@@ -670,7 +672,9 @@ def uploaded_file(filename):
 
 @app.route('/')
 def index():
-    return send_file('index.html')
+    resp = send_file('index.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return resp
 
 # ─── Init & run ───
 
