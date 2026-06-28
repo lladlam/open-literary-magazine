@@ -156,7 +156,7 @@
       <div id="regError" class="error"></div>
       <form id="registerForm">
         <input type="text" id="regUsername" placeholder="用户名" autocomplete="username" required>
-        <input type="password" id="regPassword" placeholder="密码" autocomplete="new-password" required>
+        <input type="password" id="regPassword" placeholder="密码（至少8位，含大小写和数字）" autocomplete="new-password" required>
         <input type="password" id="regPassword2" placeholder="确认密码" autocomplete="new-password" required>
         <button type="submit">注册</button>
       </form>
@@ -625,12 +625,16 @@
     }
 
     function showCreateUser() {
+      const isSuperadmin = currentUser.role === 'superadmins';
+      const roleOptions = isSuperadmin
+        ? '<option value="users">users</option><option value="admins">admins</option><option value="superadmins">superadmins</option>'
+        : '<option value="users">users</option><option value="admins">admins</option>';
       document.getElementById('modalContent').innerHTML = `
         <h3>新建用户</h3>
         <div class="form-group"><label>用户名</label><input id="cuUsername"></div>
-        <div class="form-group"><label>密码</label><input type="password" id="cuPassword"></div>
+        <div class="form-group"><label>密码（至少8位，含大小写和数字）</label><input type="password" id="cuPassword"></div>
         <div class="form-group"><label>角色</label>
-          <select id="cuRole"><option value="users">users</option><option value="admins">admins</option><option value="superadmins">superadmins</option></select>
+          <select id="cuRole">${roleOptions}</select>
         </div>
         <div class="modal-actions">
           <button class="btn btn-outline" onclick="closeModal()">取消</button>
@@ -656,15 +660,15 @@
         const users = await api('/api/users');
         const u = users.find(u => u.id === id);
         if (!u) return;
+        const isSuperadmin = currentUser.role === 'superadmins';
+        const roleOpts = isSuperadmin
+          ? `<option value="users" ${u.role==='users'?'selected':''}>users</option><option value="admins" ${u.role==='admins'?'selected':''}>admins</option><option value="superadmins" ${u.role==='superadmins'?'selected':''}>superadmins</option>`
+          : `<option value="users" ${u.role==='users'?'selected':''}>users</option><option value="admins" ${u.role==='admins'?'selected':''}>admins</option>`;
         document.getElementById('modalContent').innerHTML = `
           <h3>编辑用户：${esc(u.username)}</h3>
-          <div class="form-group"><label>新密码（留空不修改）</label><input type="password" id="euPassword"></div>
+          <div class="form-group"><label>新密码（留空不修改，至少8位含大小写和数字）</label><input type="password" id="euPassword"></div>
           <div class="form-group"><label>角色</label>
-            <select id="euRole">
-              <option value="users" ${u.role==='users'?'selected':''}>users</option>
-              <option value="admins" ${u.role==='admins'?'selected':''}>admins</option>
-              <option value="superadmins" ${u.role==='superadmins'?'selected':''}>superadmins</option>
-            </select>
+            <select id="euRole">${roleOpts}</select>
           </div>
           <div class="form-group"><label>封禁</label>
             <select id="euBanned"><option value="0" ${!u.banned?'selected':''}>正常</option><option value="1" ${u.banned?'selected':''}>封禁</option></select>

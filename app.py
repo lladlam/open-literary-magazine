@@ -3,16 +3,47 @@ import os
 import json
 import secrets
 import hashlib
+import hmac
 import time
+import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, send_file, g, abort
 from flask_cors import CORS
-from database import get_db, init_db, hash_password, verify_password, is_legacy_password, migrate_password
+from database import get_db, init_db, hash_password, verify_password, is_legacy_password, migrate_password, check_password_strength
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = secrets.token_hex(32)
+
+# ─── Request logging (superadmins only) ───
+LOG_DIR = os.path.join(os.path.dirname(__file__), 'data')
+os.makedirs(LOG_DIR, exist_ok=True)
+request_logger = logging.getLogger('request_log')
+request_logger.setLevel(logging.INFO)
+_handler = logging.FileHandler(os.path.join(LOG_DIR, 'requests.log'))
+_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
+request_logger.addHandler(_handler)
+
+@app.before_request
+def log_request():
+    if request.path.startswith('/api/') and request.path != '/api/submit-status':
+        request_logger.info(f'{request.remote_addr} {request.method} {request.path}')
+
+# ─── Signed URL for uploads ───
+UPLOAD_SECRET = app.secret_key[:32]
+
+def make_signed_url(filename, expires_in=3600):
+    exp = int(time.time()) + expires_in
+    sig = hmac.new(UPLOAD_SECRET.encode(), f'{filename}:{exp}'.encode(), hashlib.sha256).hexdigest()[:16]
+    return f'/uploads/{filename}?exp={exp}&sig={sig}'
+
+def verify_signed_url(filename, exp, sig):
+    if int(time.time()) > int(exp):
+        return False
+    expected = hmac.new(UPLOAD_SECRET.encode(), f'{filename}:{exp}'.encode(), hashlib.sha256).hexdigest()[:16]
+    return hmac.compare_digest(sig, expected)
+
 CORS(app, origins=['https://open.lladlam.top'])
 
 # ─── Rate limiter (in-memory) ───
@@ -105,6 +136,19 @@ def role_required(*roles):
         return decorated
     return decorator
 
+# ─── Logs (superadmins) ───
+
+@app.route('/api/logs', methods=['GET'])
+@role_required('superadmins')
+def get_logs():
+    log_path = os.path.join(LOG_DIR, 'requests.log')
+    if not os.path.exists(log_path):
+        return jsonify({'logs': ''})
+    with open(log_path, 'r') as f:
+        lines = f.readlines()
+    limit = min(int(request.args.get('limit', '200')), 1000)
+    return jsonify({'logs': ''.join(lines[-limit:])})
+
 # ─── Auth routes ───
 
 @app.route('/api/login', methods=['POST'])
@@ -139,8 +183,9 @@ def register():
         return jsonify({'error': '用户名和密码不能为空'}), 400
     if len(username) < 2 or len(username) > 20:
         return jsonify({'error': '用户名长度2-20字符'}), 400
-    if len(password) < 4:
-        return jsonify({'error': '密码至少4位'}), 400
+    ok, msg = check_password_strength(password)
+    if not ok:
+        return jsonify({'error': msg}), 400
     db = get_db()
     existing = db.execute("SELECT id FROM users WHERE username=?", (username,)).fetchone()
     if existing:
@@ -288,7 +333,7 @@ def get_submission(sub_id):
         return jsonify({'error': '稿件不存在'}), 404
     r = dict(row)
     r['can_edit'] = r['edit_locked_at'] and datetime.now().isoformat() < r['edit_locked_at']
-    r['file_url'] = f"/uploads/{r['file_path']}" if r['file_path'] else ''
+    r['file_url'] = make_signed_url(r['file_path']) if r['file_path'] else ''
     # Hide review info during waiting period OR during post-review revocation window
     in_revocation = r['edit_locked_at'] and datetime.now().isoformat() < r['edit_locked_at']
     if r['status'] == 'reviewing' or (r['status'] in ('passed', 'failed') and in_revocation):
@@ -386,7 +431,7 @@ def review_detail(sub_id):
     if not row:
         return jsonify({'error': '稿件不存在'}), 404
     r = dict(row)
-    r['file_url'] = f"/uploads/{r['file_path']}" if r['file_path'] else ''
+    r['file_url'] = make_signed_url(r['file_path']) if r['file_path'] else ''
     return jsonify(r)
 
 @app.route('/api/review/<int:sub_id>', methods=['POST'])
@@ -680,6 +725,10 @@ def update_settings():
         if not verify_password(user['password'], old_pwd):
             db.close()
             return jsonify({'error': '旧密码错误'}), 400
+        ok, msg = check_password_strength(data['password'])
+        if not ok:
+            db.close()
+            return jsonify({'error': msg}), 400
         db.execute("UPDATE users SET password=? WHERE id=?", (hash_password(data['password']), g.user['id']))
         db.execute("DELETE FROM sessions WHERE user_id=?", (g.user["id"],))
     if data.get('avatar') is not None:
@@ -705,6 +754,10 @@ def admin_page():
 
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
+    exp = request.args.get('exp', '')
+    sig = request.args.get('sig', '')
+    if not exp or not sig or not verify_signed_url(filename, exp, sig):
+        abort(403)
     return send_from_directory(UPLOAD_DIR, filename)
 
 @app.route('/')
