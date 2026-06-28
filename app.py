@@ -254,8 +254,9 @@ def get_submission(sub_id):
     r = dict(row)
     r['can_edit'] = r['edit_locked_at'] and datetime.now().isoformat() < r['edit_locked_at']
     r['file_url'] = f"/uploads/{r['file_path']}" if r['file_path'] else ''
-    # During waiting period, hide review info from submitter
-    if r['status'] == 'reviewing':
+    # Hide review info during waiting period OR during post-review revocation window
+    in_revocation = r['edit_locked_at'] and datetime.now().isoformat() < r['edit_locked_at']
+    if r['status'] == 'reviewing' or (r['status'] in ('passed', 'failed') and in_revocation):
         r['status'] = 'pending'
         r['review_reason'] = ''
         r['reviewed_by'] = None
