@@ -751,6 +751,7 @@
     }
 
     // ─── Audit Log ───
+    let _auditData = [];
     async function renderAudit() {
       const main = document.getElementById('mainContent');
       main.innerHTML = `
@@ -763,6 +764,7 @@
               <option value="500">最近500条</option>
             </select>
             <button class="btn btn-outline" onclick="loadAudit()" style="margin-left:8px;">刷新</button>
+            <button class="btn btn-primary" onclick="exportAudit()" style="margin-left:8px;">📦 导出CSV</button>
           </div>
         </div>
         <div class="card"><div class="table-wrap"><table><thead><tr>
@@ -776,14 +778,15 @@
       const limit = document.getElementById('auditLimit').value;
       try {
         const list = await api(`/api/audit?limit=${limit}`);
+        _auditData = list;
         const tbody = document.getElementById('auditTableBody');
         if (!list.length) {
           tbody.innerHTML = '<tr><td colspan="5" class="empty">暂无审计记录</td></tr>';
           return;
         }
         const actionMap = { review: '审核稿件', revoke: '撤回审核', create_user: '创建用户', update_user: '更新用户', delete_user: '删除用户', update_settings: '更新设置' };
-        tbody.innerHTML = list.map(r => `
-          <tr>
+        tbody.innerHTML = list.map((r, i) => `
+          <tr style="cursor:pointer" onclick="viewAuditDetail(${i})">
             <td>${formatTime(r.created_at)}</td>
             <td><strong>${esc(r.username)}</strong></td>
             <td><span class="badge badge-reviewing">${actionMap[r.action] || r.action}</span></td>
@@ -794,6 +797,39 @@
       } catch (err) {
         document.getElementById('auditTableBody').innerHTML = `<tr><td colspan="5" class="empty">${err.message}</td></tr>`;
       }
+    }
+
+    function viewAuditDetail(idx) {
+      const r = _auditData[idx];
+      if (!r) return;
+      const actionMap = { review: '审核稿件', revoke: '撤回审核', create_user: '创建用户', update_user: '更新用户', delete_user: '删除用户', update_settings: '更新设置' };
+      document.getElementById('modalContent').innerHTML = `
+        <h3>审计详情</h3>
+        <div style="display:grid;grid-template-columns:100px 1fr;gap:12px;font-size:0.9rem;line-height:1.8;">
+          <span style="color:var(--text-light)">时间</span><span>${r.created_at}</span>
+          <span style="color:var(--text-light)">操作人</span><span><strong>${esc(r.username)}</strong> (ID: ${r.user_id || '-'})</span>
+          <span style="color:var(--text-light)">操作类型</span><span><span class="badge badge-reviewing">${actionMap[r.action] || r.action}</span></span>
+          <span style="color:var(--text-light)">目标</span><span>${esc(r.target)}</span>
+          <span style="color:var(--text-light)">详情</span><span>${esc(r.detail) || '-'}</span>
+        </div>
+        <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">关闭</button></div>
+      `;
+      openModal();
+    }
+
+    function exportAudit() {
+      if (!_auditData.length) { alert('暂无数据'); return; }
+      const actionMap = { review: '审核稿件', revoke: '撤回审核', create_user: '创建用户', update_user: '更新用户', delete_user: '删除用户', update_settings: '更新设置' };
+      let csv = '\uFEFF时间,操作人,操作类型,目标,详情\n';
+      _auditData.forEach(r => {
+        csv += `"${r.created_at}","${r.username}","${actionMap[r.action]||r.action}","${(r.target||'').replace(/"/g,'""')}","${(r.detail||'').replace(/"/g,'""')}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `审计日志_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
     }
 
     // ─── Submissions (users) ───
