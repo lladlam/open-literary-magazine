@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, send_file, g
 from flask_cors import CORS
-from database import get_db, init_db, hash_password, verify_password
+from database import get_db, init_db, hash_password, verify_password, is_legacy_password, migrate_password
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = secrets.token_hex(32)
@@ -69,6 +69,8 @@ def login():
         db.close()
         return jsonify({'error': '账号已被封禁'}), 403
     token = secrets.token_hex(32)
+    if is_legacy_password(user["password"]):
+        migrate_password(db, user["id"], data.get("password", ""))
     db.execute("INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, datetime('now', '+7 days'))",
                (user['id'], token))
     db.commit()
@@ -96,6 +98,8 @@ def register():
     db.commit()
     user = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
     token = secrets.token_hex(32)
+    if is_legacy_password(user["password"]):
+        migrate_password(db, user["id"], data.get("password", ""))
     db.execute("INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, datetime('now', '+7 days'))",
                (user['id'], token))
     db.commit()

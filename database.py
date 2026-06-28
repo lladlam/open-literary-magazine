@@ -18,10 +18,26 @@ def hash_password(password):
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def verify_password(stored, password):
+    import hashlib, secrets
+    # Try bcrypt first
+    if stored.startswith('$2'):
+        try:
+            return bcrypt.checkpw(password.encode(), stored.encode())
+        except Exception:
+            return False
+    # Fallback: old SHA-256 format (salt:hash)
     try:
-        return bcrypt.checkpw(password.encode(), stored.encode())
+        salt, h = stored.split(':')
+        computed = hashlib.sha256((salt + password).encode()).hexdigest()
+        return computed == h
     except Exception:
         return False
+
+def is_legacy_password(stored):
+    return not stored.startswith('$2')
+
+def migrate_password(conn, user_id, password):
+    conn.execute("UPDATE users SET password=? WHERE id=?", (hash_password(password), user_id))
 
 def init_db():
     conn = get_db()
