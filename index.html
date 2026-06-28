@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="请输入文本 | 文学底刊">
+  <meta property="og:description" content="不限题材，不问来路，人尽其才，物尽其用">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://open.lladlam.top">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="请输入文本 | 文学底刊">
+  <meta name="twitter:description" content="不限题材，不问来路，人尽其才，物尽其用">
+  <title>请输入文本 | 文学底刊</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.loli.net/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="#" class="nav-logo">
+        <span class="logo-bracket">《</span>请输入文本<span class="logo-bracket">》</span>
+      </a>
+      <button class="nav-toggle" aria-label="菜单">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="#home">首页</a></li>
+        <li><a href="#about">关于</a></li>
+        <li><a href="#columns">栏目</a></li>
+        <li><a href="#team">编辑部</a></li>
+        <li><a href="#submit">投稿</a></li>
+        <li><a href="/admin">用户中心</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- 英雄区 -->
+  <section id="home" class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <div class="hero-badge">SEASON 01 · Vol.1 · 创刊号</div>
+      <h1 class="hero-title">
+        <span class="title-bracket">《</span>请输入文本<span class="title-bracket">》</span>
+      </h1>
+      <p class="hero-subtitle">文学底刊</p>
+      <p class="hero-desc">不限题材，不问来路，人尽其才，物尽其用</p>
+      <div class="hero-actions">
+        <a href="/admin" class="btn btn-primary" id="submitBtn">投稿指南</a>
+        <a href="#columns" class="btn btn-outline">浏览栏目</a>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <span>向下滚动</span>
+      <div class="scroll-arrow"></div>
+    </div>
+  </section>
+
+  <!-- 关于 -->
+  <section id="about" class="section about">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">ABOUT</span>
+        <h2>关于我们</h2>
+      </div>
+      <div class="about-grid">
+        <div class="about-text">
+          <p class="about-lead">既然都有学术底刊，为什么我们不搞一个文学底刊？</p>
+          <p>《请输入文本》诞生于一个有趣的想法——用一个带点抽象意味的名字，办一本真正有趣的文学刊物。</p>
+          <p>我们相信每个人都有值得书写的故事，每段文字都值得被看见。不论你是资深写手还是第一次提笔，这里都是你的舞台。</p>
+          <div class="about-stats">
+            <div class="stat">
+              <span class="stat-number">8</span>
+              <span class="stat-label">投稿栏目</span>
+            </div>
+            <div class="stat">
+              <span class="stat-number">∞</span>
+              <span class="stat-label">创作可能</span>
+            </div>
+            <div class="stat">
+              <span class="stat-number">0</span>
+              <span class="stat-label">题材限制</span>
+            </div>
+          </div>
+        </div>
+        <div class="about-card">
+          <h3>我们的宗旨</h3>
+          <p>不限题材，不问来路，人尽其才，物尽其用</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 栏目 -->
+  <section id="columns" class="section columns">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">COLUMNS</span>
+        <h2>栏目一览</h2>
+        <p class="section-desc">八大栏目，总有一个适合你</p>
+      </div>
+      <div class="columns-grid">
+        <div class="column-card" data-category="文字">
+          <div class="card-emoji">💬</div>
+          <h3>笔哩笔哩</h3>
+          <p class="card-type">不限题材</p>
+          <p>不加修饰的真心话，只要你敢写我们就敢收。收纳网友奇思妙想，优秀者可同步成视频。</p>
+          <span class="card-wordcount">4k - 5w字</span>
+        </div>
+        <div class="column-card" data-category="小说">
+          <div class="card-emoji">📖</div>
+          <h3>笔上不足</h3>
+          <p class="card-type">短篇小说</p>
+          <p>有些事，想说又怕说错。来吧，把心事交给我。</p>
+          <span class="card-wordcount">约4k字</span>
+        </div>
+        <div class="column-card" data-category="小说">
+          <div class="card-emoji">📚</div>
+          <h3>笔下有娱</h3>
+          <p class="card-type">长篇小说</p>
+          <p>不设限，只要你觉得有趣，我都愿意听。那些荒诞又有趣的故事，我都愿意帮你写。</p>
+          <span class="card-wordcount">5w字+</span>
+        </div>
+        <div class="column-card" data-category="美术">
+          <div class="card-emoji">🎨</div>
+          <h3>给我刊刊</h3>
+          <p class="card-type">美术稿件</p>
+          <p>美术作品展示平台。禁止AI生成，只收手绘原创。</p>
+          <span class="card-wordcount">图片投稿</span>
+        </div>
+        <div class="column-card" data-category="评论">
+          <div class="card-emoji">⚡</div>
+          <h3>评评无奇</h3>
+          <p class="card-type">文学评论</p>
+          <p>锐评区，文学评论或评论文学。把你的观点亮出来。</p>
+          <span class="card-wordcount">不限</span>
+        </div>
+        <div class="column-card" data-category="艺术">
+          <div class="card-emoji">🖊️</div>
+          <h3>字由字在</h3>
+          <p class="card-type">书法艺术</p>
+          <p>书法等艺术作品展示。篆书/草书需附释文。</p>
+          <span class="card-wordcount">照片投稿</span>
+        </div>
+        <div class="column-card" data-category="诗歌">
+          <div class="card-emoji">🌙</div>
+          <h3>被诗咬了</h3>
+          <p class="card-type">现代诗歌</p>
+          <p>那些不打烊的想法，我都愿意帮你实现。</p>
+          <span class="card-wordcount">现代诗</span>
+        </div>
+        <div class="column-card" data-category="诗歌">
+          <div class="card-emoji">🏔️</div>
+          <h3>诗不打烊</h3>
+          <p class="card-type">古体诗歌</p>
+          <p>律诗、词牌需符合用韵、平仄、句式要求。标点请加全。</p>
+          <span class="card-wordcount">古体诗</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 编辑部 -->
+  <section id="team" class="section team">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">EDITORIAL</span>
+        <h2>编辑部 · 笔趣阁</h2>
+      </div>
+      <div class="team-table">
+        <div class="team-row">
+          <span class="team-title">主编</span>
+          <span class="team-name">安晴</span>
+        </div>
+        <div class="team-row">
+          <span class="team-title">执行主编</span>
+          <span class="team-name">鹤小儒（笔给你，你来写）</span>
+        </div>
+        <div class="team-row">
+          <span class="team-title">网络文学组总编</span>
+          <span class="team-name">酒仙 · 青云 · 凌霄</span>
+        </div>
+        <div class="team-row">
+          <span class="team-title">诗歌组总编</span>
+          <span class="team-name">吴清顺 <small>河南省作家协会会员</small></span>
+        </div>
+        <div class="team-row">
+          <span class="team-title">诗词组总编</span>
+          <span class="team-name">艾梦斐 <small>西安诗词学会会员</small></span>
+        </div>
+        <div class="team-row">
+          <span class="team-title">小说组总编</span>
+          <span class="team-name">杜荷语 <small>河南省作家协会会员 · 西北大学创意写作硕士</small></span>
+        </div>
+        <div class="team-row">
+          <span class="team-title">其他组总编</span>
+          <span class="team-name">师文超 <small>河南省青作协副秘书长</small></span>
+        </div>
+        <div class="team-row">
+          <span class="team-title">书法组作品总编</span>
+          <span class="team-name">赵文政 <small>河南省书法家协会会员</small> · 刘十五 <small>甘肃省/安徽省书法家协会会员</small></span>
+        </div>
+        <div class="team-row">
+          <span class="team-title">美术组作品总编</span>
+          <span class="team-name">TaddeoLevente</span>
+        </div>
+        <div class="team-row">
+          <span class="team-title">封面画师</span>
+          <span class="team-name">令时愧夏KiriAINa</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 投稿 -->
+  <section id="submit" class="section submit">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">SUBMISSION</span>
+        <h2>投稿指南</h2>
+      </div>
+      <div class="submit-grid">
+        <div class="submit-steps">
+          <div class="step">
+            <div class="step-num">01</div>
+            <div class="step-content">
+              <h4>选择栏目</h4>
+              <p>根据你的作品类型，选择合适的投稿栏目。</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">02</div>
+            <div class="step-content">
+              <h4>准备稿件</h4>
+              <p>按格式要求准备：邮件标题写「栏目+作品名+作者名」，正文附联系方式和简介，附件用Word格式。</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">03</div>
+            <div class="step-content">
+              <h4>发送邮件</h4>
+              <p>将稿件发送至编辑部邮箱，等待回复。</p>
+            </div>
+          </div>
+        </div>
+        <div class="submit-rules">
+
+          <ul>
+            <li>附件格式请用 <strong>Word文档</strong></li>
+            <li>一稿一投，同篇稿件放一个附件</li>
+            <li>禁止投送超大附件（会过期）</li>
+            <li>可AI辅助，但不能全篇AI生成</li>
+            <li>美术稿件 <strong>禁止AI生成</strong></li>
+            <li>篆书/草书作品需附释文</li>
+            <li>古体诗词需符合格律，标点加全</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <span class="logo-bracket">《</span>请输入文本<span class="logo-bracket">》</span>
+          <p>文学底刊 · SEASON 01</p>
+        </div>
+        <div class="footer-info">
+          <p>主办：中国博闻集团有限公司（香港）安晴杂志社</p>
+          <p>ISSN：2709-5754 · 投稿邮箱：<a href="mailto:tougao@example.com" style="color:rgba(255,255,255,0.7)">tougao@example.com</a></p>
+          <p>QQ群：1027583880 · 公众号：笔给我我来写 · B站：笔给你你来写_</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 请输入文本 · 文学底刊 ｜ 由 lladlam 用 ❤️ 制作</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js" integrity="sha384-Jjk8JWiDrL1NY8kTPmv3EhGGmElQWWdSRtyoH5CuYVhgbnTy1hkkyFGusCOGvOIh" crossorigin="anonymous"></script>
+</body>
+</html>

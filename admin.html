@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>请输入文本 · 管理后台</title>
+  <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --bg-white: #ffffff;
+      --text: #333;
+      --text-light: #888;
+      --primary: #8b5e3c;
+      --primary-light: #c49a6c;
+      --primary-bg: #f5efe8;
+      --border: #e8e8e8;
+      --success: #52c41a;
+      --danger: #ff4d4f;
+      --warning: #faad14;
+      --radius: 8px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans SC', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: var(--primary); text-decoration: none; }
+
+    /* Layout */
+    .login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { background: var(--bg-white); padding: 40px; border-radius: 12px; box-shadow: 0 2px 20px rgba(0,0,0,0.08); width: 360px; }
+    .login-box h1 { text-align: center; font-size: 1.5rem; margin-bottom: 8px; }
+    .login-box .subtitle { text-align: center; color: var(--text-light); font-size: 0.85rem; margin-bottom: 28px; }
+    .login-box input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; margin-bottom: 12px; outline: none; }
+    .login-box input:focus { border-color: var(--primary); }
+    .login-box button { width: 100%; padding: 11px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-size: 0.95rem; cursor: pointer; margin-bottom: 12px; }
+    .login-box button:hover { background: var(--primary-light); }
+    .login-box .switch { text-align: center; font-size: 0.85rem; color: var(--text-light); }
+    .login-box .switch a { cursor: pointer; }
+    .login-box .error { color: var(--danger); font-size: 0.85rem; text-align: center; margin-bottom: 12px; display: none; }
+    .login-box .back-link { text-align: center; margin-top: 16px; font-size: 0.85rem; }
+
+    .app-layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: var(--bg-white); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10; }
+    .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); }
+    .sidebar-header h2 { font-size: 1.1rem; }
+    .sidebar-header small { color: var(--text-light); font-size: 0.75rem; }
+    .sidebar-nav { flex: 1; padding: 12px 0; }
+    .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: var(--text-light); font-size: 0.9rem; transition: all 0.2s; }
+    .sidebar-nav a:hover, .sidebar-nav a.active { color: var(--primary); background: var(--primary-bg); }
+    .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-light); }
+    .sidebar-footer a { cursor: pointer; }
+
+    .main-content { flex: 1; margin-left: 220px; padding: 24px; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+
+    /* Cards */
+    .card { background: var(--bg-white); border-radius: var(--radius); box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 24px; margin-bottom: 20px; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { font-weight: 500; color: var(--text-light); font-size: 0.8rem; text-transform: uppercase; }
+    tr:hover { background: #fafafa; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-light); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Badge */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 500; }
+    .badge-pending { background: #fff7e6; color: var(--warning); }
+    .badge-reviewing { background: #e6f7ff; color: #1890ff; }
+    .badge-passed { background: #f6ffed; color: var(--success); }
+    .badge-failed { background: #fff2f0; color: var(--danger); }
+
+    /* Form */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; outline: none; font-family: inherit; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--bg-white); border-radius: 12px; padding: 28px; width: 480px; max-width: 90vw; max-height: 85vh; overflow-y: auto; }
+    .modal h3 { margin-bottom: 20px; font-size: 1.1rem; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--bg-white); border-radius: var(--radius); padding: 20px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .stat-card .num { font-size: 2rem; font-weight: 700; color: var(--primary); }
+    .stat-card .label { font-size: 0.8rem; color: var(--text-light); margin-top: 4px; }
+
+    /* Detail */
+    .detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .detail-header h2 { font-size: 1.3rem; }
+    .detail-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .detail-meta span { font-size: 0.85rem; color: var(--text-light); }
+    .detail-content { background: #fafafa; padding: 20px; border-radius: 8px; line-height: 1.8; white-space: pre-wrap; }
+    .detail-image { max-width: 100%; border-radius: 8px; margin-top: 12px; }
+
+    /* Filter bar */
+    .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .filter-bar select, .filter-bar input { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+
+    /* Empty state */
+    .empty { text-align: center; padding: 60px 20px; color: var(--text-light); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar { width: 60px; }
+      .sidebar-header h2, .sidebar-header small, .sidebar-nav span, .sidebar-footer { display: none; }
+      .sidebar-nav a { justify-content: center; padding: 12px; }
+      .main-content { margin-left: 60px; padding: 16px; padding-top: 56px; }
+      .form-row { grid-template-columns: 1fr; }
+      .mobile-header { display: flex !important; }
+    }
+
+    .mobile-header { display: none; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-white); border-bottom: 1px solid var(--border); position: fixed; top: 0; left: 60px; right: 0; z-index: 5; }
+    .mobile-header .mobile-user { font-size: 0.85rem; color: var(--text-light); }
+    .mobile-header .btn { font-size: 0.8rem; padding: 5px 12px; }
+  </style>
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="loginPage" class="login-page">
+    <div class="login-box">
+      <h1>《请输入文本》</h1>
+      <p class="subtitle">管理后台</p>
+      <div id="loginError" class="error"></div>
+      <form id="loginForm">
+        <input type="text" id="loginUsername" placeholder="用户名" autocomplete="username" required>
+        <input type="password" id="loginPassword" placeholder="密码" autocomplete="current-password" required>
+        <button type="submit">登录</button>
+      </form>
+      <p class="switch">没有账号？<a onclick="showRegister()">注册</a></p>
+      <p class="back-link"><a href="/">← 返回首页</a></p>
+    </div>
+  </div>
+
+  <!-- Register Page -->
+  <div id="registerPage" class="login-page" style="display:none">
+    <div class="login-box">
+      <h1>注册账号</h1>
+      <p class="subtitle">注册后可投稿</p>
+      <div id="regError" class="error"></div>
+      <form id="registerForm">
+        <input type="text" id="regUsername" placeholder="用户名" autocomplete="username" required>
+        <input type="password" id="regPassword" placeholder="密码" autocomplete="new-password" required>
+        <input type="password" id="regPassword2" placeholder="确认密码" autocomplete="new-password" required>
+        <button type="submit">注册</button>
+      </form>
+      <p class="switch">已有账号？<a onclick="showLogin()">登录</a></p>
+      <p class="back-link"><a href="/">← 返回首页</a></p>
+    </div>
+  </div>
+
+  <!-- App Layout -->
+  <div id="appLayout" class="app-layout" style="display:none">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>请输入文本</h2>
+        <small id="sidebarRole"></small>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer">
+        <span id="sidebarUser"></span><br>
+        <a onclick="logout()">退出登录</a> · <a href="/">返回首页</a>
+      </div>
+    </aside>
+    <main class="main-content" id="mainContent"></main>
+    <div class="mobile-header" id="mobileHeader">
+      <span class="mobile-user" id="mobileUser"></span>
+      <button class="btn btn-outline" onclick="logout()">退出</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modalContent"></div>
+  </div>
+
+  <script>
+    // ─── State ───
+    let token = localStorage.getItem('token');
+    let currentUser = null;
+    let currentPage = 'dashboard';
+
+    // ─── API ───
+    async function api(path, opts = {}) {
+      const headers = { ...opts.headers };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      if (opts.body && !(opts.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(opts.body);
+      }
+      const res = await fetch(path, { ...opts, headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '请求失败');
+      return data;
+    }
+
+    // ─── Auth ───
+    function showLogin() {
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('registerPage').style.display = 'none';
+      document.getElementById('appLayout').style.display = 'none';
+    }
+    function showRegister() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('registerPage').style.display = 'flex';
+      document.getElementById('appLayout').style.display = 'none';
+    }
+    function showApp() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('registerPage').style.display = 'none';
+      document.getElementById('appLayout').style.display = 'flex';
+    }
+
+    document.getElementById('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const data = await api('/api/login', {
+          method: 'POST',
+          body: { username: document.getElementById('loginUsername').value, password: document.getElementById('loginPassword').value }
+        });
+        token = data.token;
+        localStorage.setItem('token', token);
+        currentUser = data.user;
+        initApp();
+      } catch (err) {
+        document.getElementById('loginError').textContent = err.message;
+        document.getElementById('loginError').style.display = 'block';
+      }
+    };
+
+    document.getElementById('registerForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const p1 = document.getElementById('regPassword').value;
+      const p2 = document.getElementById('regPassword2').value;
+      if (p1 !== p2) {
+        document.getElementById('regError').textContent = '两次密码不一致';
+        document.getElementById('regError').style.display = 'block';
+        return;
+      }
+      try {
+        const data = await api('/api/register', {
+          method: 'POST',
+          body: { username: document.getElementById('regUsername').value, password: p1 }
+        });
+        token = data.token;
+        localStorage.setItem('token', token);
+        currentUser = data.user;
+        initApp();
+      } catch (err) {
+        document.getElementById('regError').textContent = err.message;
+        document.getElementById('regError').style.display = 'block';
+      }
+    };
+
+    async function logout() {
+      try { await api('/api/logout', { method: 'POST' }); } catch {}
+      token = null;
+      currentUser = null;
+      localStorage.removeItem('token');
+      showLogin();
+    }
+
+    // ─── Init ───
+    async function initApp() {
+      if (!token) { showLogin(); return; }
+      try {
+        currentUser = await api('/api/me');
+      } catch {
+        token = null;
+        localStorage.removeItem('token');
+        showLogin();
+        return;
+      }
+      showApp();
+      renderSidebar();
+      navigate(currentUser.role === 'users' ? 'submissions' : 'dashboard');
+    }
+
+    function renderSidebar() {
+      const nav = document.getElementById('sidebarNav');
+      const role = currentUser.role;
+      document.getElementById('sidebarRole').textContent = role;
+      document.getElementById('sidebarUser').textContent = currentUser.username;
+      document.getElementById('mobileUser').textContent = currentUser.username;
+
+      let items = [];
+      if (role === 'superadmins') {
+        items = [
+          { id: 'dashboard', icon: '📊', label: '数据面板' },
+          { id: 'open-time', icon: '🕐', label: '开放时间' },
+          { id: 'review', icon: '📋', label: '稿件审核' },
+          { id: 'users', icon: '👥', label: '用户管理' },
+          { id: 'settings', icon: '⚙️', label: '设置' },
+        ];
+      } else if (role === 'admins') {
+        items = [
+          { id: 'review', icon: '📋', label: '稿件审核' },
+          { id: 'settings', icon: '⚙️', label: '设置' },
+        ];
+      } else {
+        items = [
+          { id: 'submissions', icon: '📝', label: '稿件列表' },
+          { id: 'settings', icon: '⚙️', label: '设置' },
+        ];
+      }
+      nav.innerHTML = items.map(i =>
+        `<a href="#" onclick="navigate('${i.id}')" data-page="${i.id}">${i.icon} <span>${i.label}</span></a>`
+      ).join('');
+    }
+
+    function navigate(page) {
+      currentPage = page;
+      document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+      const renderers = { dashboard: renderDashboard, 'open-time': renderOpenTime, review: renderReview, users: renderUsers, submissions: renderSubmissions, settings: renderSettings };
+      if (renderers[page]) renderers[page]();
+    }
+
+    // ─── Dashboard ───
+    async function renderDashboard() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = '<div class="page-header"><h1>数据面板</h1></div><div class="stats-grid" id="statsGrid"></div>';
+      try {
+        const [subs, users] = await Promise.all([
+          api('/api/review/list'),
+          api('/api/users')
+        ]);
+        const stats = {
+          total: subs.length,
+          pending: subs.filter(s => s.status === 'pending' || s.status === 'reviewing').length,
+          passed: subs.filter(s => s.status === 'passed').length,
+          failed: subs.filter(s => s.status === 'failed').length,
+          users: users.length
+        };
+        document.getElementById('statsGrid').innerHTML = `
+          <div class="stat-card"><div class="num">${stats.total}</div><div class="label">总稿件</div></div>
+          <div class="stat-card"><div class="num">${stats.pending}</div><div class="label">待审核</div></div>
+          <div class="stat-card"><div class="num">${stats.passed}</div><div class="label">已通过</div></div>
+          <div class="stat-card"><div class="num">${stats.failed}</div><div class="label">未通过</div></div>
+          <div class="stat-card"><div class="num">${stats.users}</div><div class="label">用户数</div></div>
+        `;
+      } catch (err) {
+        main.innerHTML += `<div class="card"><p>${err.message}</p></div>`;
+      }
+    }
+
+    // ─── Open Time ───
+    async function renderOpenTime() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = '<div class="page-header"><h1>开放时间</h1></div><div class="card" id="openTimeCard">加载中...</div>';
+      try {
+        const s = await api('/api/settings');
+        document.getElementById('openTimeCard').innerHTML = `
+          <div class="form-group">
+            <label>投稿通道状态</label>
+            <select id="otOpen">
+              <option value="1" ${s.submit_open === '1' ? 'selected' : ''}>开放</option>
+              <option value="0" ${s.submit_open === '0' ? 'selected' : ''}>关闭</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>开始时间（可选）</label>
+              <input type="datetime-local" id="otStart" value="${s.submit_start || ''}">
+            </div>
+            <div class="form-group">
+              <label>结束时间（可选）</label>
+              <input type="datetime-local" id="otEnd" value="${s.submit_end || ''}">
+            </div>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-light);margin-bottom:16px;">设置时间范围后，仅在该时段内允许投稿。留空则由上方开关控制。</p>
+          <div class="form-group">
+            <label>30分钟等待期</label>
+            <select id="otWait">
+              <option value="1" ${s.wait_period_enabled === '1' ? 'selected' : ''}>开启</option>
+              <option value="0" ${s.wait_period_enabled === '0' ? 'selected' : ''}>关闭</option>
+            </select>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-light);margin-bottom:16px;">开启后，提交/审核后进入30分钟等待期，期间可撤回。关闭后立即生效。</p>
+          <button class="btn btn-primary" onclick="saveOpenTime()">保存</button>
+          <span id="otMsg" style="margin-left:12px;font-size:0.85rem;"></span>
+        `;
+      } catch (err) {
+        document.getElementById('openTimeCard').textContent = err.message;
+      }
+    }
+
+    async function saveOpenTime() {
+      try {
+        await api('/api/settings', {
+          method: 'PUT',
+          body: {
+            submit_open: document.getElementById('otOpen').value,
+            submit_start: document.getElementById('otStart').value,
+            submit_end: document.getElementById('otEnd').value,
+            wait_period_enabled: document.getElementById('otWait').value
+          }
+        });
+        document.getElementById('otMsg').textContent = '已保存';
+        document.getElementById('otMsg').style.color = 'var(--success)';
+      } catch (err) {
+        document.getElementById('otMsg').textContent = err.message;
+        document.getElementById('otMsg').style.color = 'var(--danger)';
+      }
+    }
+
+    // ─── Review ───
+    async function renderReview() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div class="page-header"><h1>稿件审核</h1><button class="btn btn-outline" onclick="downloadAll()">📦 导出全部</button></div>
+        <div class="filter-bar">
+          <select id="reviewSort" onchange="loadReviewList()">
+            <option value="time">按时间</option>
+            <option value="category">按类别</option>
+          </select>
+          <select id="reviewStatus" onchange="loadReviewList()">
+            <option value="all">全部状态</option>
+            <option value="pending">待审核</option>
+            <option value="passed">已通过</option>
+            <option value="failed">未通过</option>
+          </select>
+        </div>
+        <div class="card"><div class="table-wrap"><table><thead><tr>
+          <th>作品名</th><th>类型</th><th>投稿人</th><th>提交时间</th><th>状态</th><th>操作</th>
+        </tr></thead><tbody id="reviewTableBody"><tr><td colspan="6" class="empty">加载中...</td></tr></tbody></table></div></div>
+      `;
+      loadReviewList();
+    }
+
+    async function loadReviewList() {
+      const sort = document.getElementById('reviewSort').value;
+      const status = document.getElementById('reviewStatus').value;
+      try {
+        const list = await api(`/api/review/list?sort=${sort}&status=${status}`);
+        const tbody = document.getElementById('reviewTableBody');
+        if (!list.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">暂无稿件</td></tr>';
+          return;
+        }
+        tbody.innerHTML = list.map(s => `
+          <tr>
+            <td><strong>${esc(s.title)}</strong></td>
+            <td><span class="badge badge-${s.status}">${categoryLabel(s.category)}</span></td>
+            <td>${esc(s.username)}</td>
+            <td>${formatTime(s.submitted_at)}</td>
+            <td><span class="badge badge-${s.status}">${statusLabel(s.status)}</span></td>
+            <td><button class="btn btn-outline btn-sm" onclick="viewReviewDetail(${s.id})">查看</button></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        document.getElementById('reviewTableBody').innerHTML = `<tr><td colspan="6" class="empty">${err.message}</td></tr>`;
+      }
+    }
+
+    async function viewReviewDetail(id) {
+      try {
+        const s = await api(`/api/review/${id}`);
+        const isImage = ['给我刊刊', '字由字在'].includes(s.category);
+        const contentHtml = isImage && s.file_url
+          ? `<img src="${s.file_url}" class="detail-image" alt="作品图片">`
+          : `<div class="detail-content">${esc(s.content || '(无文本内容)')}</div>`;
+
+        const canRevoke = s.edit_locked_at && new Date(s.edit_locked_at) > new Date() && (s.status === 'passed' || s.status === 'failed');
+
+        document.getElementById('modalContent').innerHTML = `
+          <div class="detail-header">
+            <h2>${esc(s.title)}</h2>
+            <span class="badge badge-${s.status}">${categoryLabel(s.category)}</span>
+            <span style="color:var(--text-light);font-size:0.85rem;">${esc(s.username)}</span>
+          </div>
+          <div class="detail-meta">
+            <span>投稿人：${esc(s.author_name)}</span>
+            <span>联系方式：${esc(s.contact)}</span>
+            <span>提交时间：${formatTime(s.submitted_at)}</span>
+          </div>
+          ${s.author_bio ? `<div class="form-group"><label>作者简介</label><div class="detail-content">${esc(s.author_bio)}</div></div>` : ''}
+          ${s.synopsis ? `<div class="form-group"><label>作品梗概</label><div class="detail-content">${esc(s.synopsis)}</div></div>` : ''}
+          ${s.creation_note ? `<div class="form-group"><label>创作思路</label><div class="detail-content">${esc(s.creation_note)}</div></div>` : ''}
+          <div class="form-group"><label>${isImage ? '作品预览' : '作品预览'}</label>${contentHtml}</div>
+          ${s.file_url && !isImage ? `<div class="form-group"><label>附件</label><a href="${s.file_url}" target="_blank">📄 下载附件</a></div>` : ''}
+          ${s.status === 'passed' || s.status === 'failed' ? `
+            <div class="form-group"><label>审核结果</label>
+              <div style="padding:12px;background:${s.status==='passed'?'#f6ffed':'#fff2f0'};border-radius:6px;">
+                <strong>${statusLabel(s.status)}</strong>：${esc(s.review_reason)}
+              </div>
+            </div>
+          ` : ''}
+          <div class="modal-actions">
+            <button class="btn btn-outline" onclick="exportSingle(${s.id})">📦 导出</button>
+            ${canRevoke ? `<button class="btn btn-outline" onclick="revokeReview(${s.id})">撤回</button>` : ''}
+            <button class="btn btn-outline" onclick="closeModal()">关闭</button>
+            ${s.status !== 'passed' ? `<button class="btn btn-success" onclick="doReview(${s.id},'pass')">通过</button>` : ''}
+            ${s.status !== 'failed' ? `<button class="btn btn-danger" onclick="doReview(${s.id},'fail')">不通过</button>` : ''}
+          </div>
+        `;
+        openModal();
+      } catch (err) { alert(err.message); }
+    }
+
+    function doReview(id, action) {
+      const label = action === 'pass' ? '通过' : '不通过';
+      document.getElementById('modalContent').innerHTML = `
+        <h3>审核：${label}</h3>
+        <div class="form-group">
+          <label>${label}原因 *</label>
+          <textarea id="reviewReason" rows="4" placeholder="请输入${label}原因..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" onclick="closeModal()">取消</button>
+          <button class="btn btn-primary" onclick="submitReview(${id}, '${action}')">确认${label}</button>
+        </div>
+      `;
+      openModal();
+    }
+
+    async function submitReview(id, action) {
+      const reason = document.getElementById('reviewReason').value.trim();
+      if (!reason) { alert('请填写原因'); return; }
+      try {
+        await api(`/api/review/${id}`, { method: 'POST', body: { action, reason } });
+        alert('已提交，30分钟内可更改');
+        closeModal();
+        loadReviewList();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function revokeReview(id) {
+      if (!confirm('确定撤回？')) return;
+      try {
+        await api(`/api/review/${id}/revoke`, { method: 'POST' });
+        alert('已撤回');
+        closeModal();
+        loadReviewList();
+      } catch (err) { alert(err.message); }
+    }
+
+    function downloadAll() {
+      const sort = document.getElementById('reviewSort').value;
+      const status = document.getElementById('reviewStatus').value;
+      fetchWithAuth(`/api/review/download?sort=${sort}&status=${status}`, '稿件导出.zip');
+    }
+
+    function exportSingle(id) {
+      fetchWithAuth(`/api/review/download/${id}`, `稿件${id}.zip`);
+    }
+
+    async function fetchWithAuth(url, filename) {
+      try {
+        const sep = url.includes('?') ? '&' : '?';
+        const res = await fetch(url + sep + 'token=' + encodeURIComponent(token));
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || '下载失败');
+          return;
+        }
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch (e) {
+        alert('下载失败: ' + e.message);
+      }
+    }
+
+    // ─── Users ───
+    async function renderUsers() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div class="page-header"><h1>用户管理</h1><button class="btn btn-primary" onclick="showCreateUser()">+ 新建用户</button></div>
+        <div class="card"><div class="table-wrap"><table><thead><tr>
+          <th>用户名</th><th>角色</th><th>状态</th><th>注册时间</th><th>操作</th>
+        </tr></thead><tbody id="usersTableBody"><tr><td colspan="5" class="empty">加载中...</td></tr></tbody></table></div></div>
+      `;
+      loadUsers();
+    }
+
+    async function loadUsers() {
+      try {
+        const users = await api('/api/users');
+        const tbody = document.getElementById('usersTableBody');
+        tbody.innerHTML = users.map(u => `
+          <tr>
+            <td><strong>${esc(u.username)}</strong></td>
+            <td><span class="badge badge-${u.role === 'superadmins' ? 'passed' : u.role === 'admins' ? 'reviewing' : 'pending'}">${u.role}</span></td>
+            <td>${u.banned ? '<span class="badge badge-failed">已封禁</span>' : '<span class="badge badge-passed">正常</span>'}</td>
+            <td>${formatTime(u.created_at)}</td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="editUser(${u.id})">编辑</button>
+              <button class="btn btn-outline btn-sm" onclick="viewUserSubs(${u.id},'${esc(u.username)}')">稿件</button>
+              ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">删除</button>` : ''}
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="5" class="empty">${err.message}</td></tr>`;
+      }
+    }
+
+    function showCreateUser() {
+      document.getElementById('modalContent').innerHTML = `
+        <h3>新建用户</h3>
+        <div class="form-group"><label>用户名</label><input id="cuUsername"></div>
+        <div class="form-group"><label>密码</label><input type="password" id="cuPassword"></div>
+        <div class="form-group"><label>角色</label>
+          <select id="cuRole"><option value="users">users</option><option value="admins">admins</option><option value="superadmins">superadmins</option></select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" onclick="closeModal()">取消</button>
+          <button class="btn btn-primary" onclick="createUser()">创建</button>
+        </div>
+      `;
+      openModal();
+    }
+
+    async function createUser() {
+      try {
+        await api('/api/users', {
+          method: 'POST',
+          body: { username: document.getElementById('cuUsername').value, password: document.getElementById('cuPassword').value, role: document.getElementById('cuRole').value }
+        });
+        closeModal();
+        loadUsers();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function editUser(id) {
+      try {
+        const users = await api('/api/users');
+        const u = users.find(u => u.id === id);
+        if (!u) return;
+        document.getElementById('modalContent').innerHTML = `
+          <h3>编辑用户：${esc(u.username)}</h3>
+          <div class="form-group"><label>新密码（留空不修改）</label><input type="password" id="euPassword"></div>
+          <div class="form-group"><label>角色</label>
+            <select id="euRole">
+              <option value="users" ${u.role==='users'?'selected':''}>users</option>
+              <option value="admins" ${u.role==='admins'?'selected':''}>admins</option>
+              <option value="superadmins" ${u.role==='superadmins'?'selected':''}>superadmins</option>
+            </select>
+          </div>
+          <div class="form-group"><label>封禁</label>
+            <select id="euBanned"><option value="0" ${!u.banned?'selected':''}>正常</option><option value="1" ${u.banned?'selected':''}>封禁</option></select>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" onclick="saveUser(${id})">保存</button>
+          </div>
+        `;
+        openModal();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function saveUser(id) {
+      const body = { role: document.getElementById('euRole').value, banned: document.getElementById('euBanned').value === '1' };
+      const pwd = document.getElementById('euPassword').value;
+      if (pwd) body.password = pwd;
+      try {
+        await api(`/api/users/${id}`, { method: 'PUT', body });
+        closeModal();
+        loadUsers();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('确定删除此用户？')) return;
+      try {
+        await api(`/api/users/${id}`, { method: 'DELETE' });
+        loadUsers();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function viewUserSubs(id, username) {
+      try {
+        const subs = await api(`/api/users/${id}/submissions`);
+        let html = `<h3>${esc(username)} 的稿件</h3>`;
+        if (!subs.length) {
+          html += '<div class="empty">暂无稿件</div>';
+        } else {
+          html += '<table style="width:100%"><thead><tr><th>作品名</th><th>类型</th><th>状态</th><th>时间</th></tr></thead><tbody>';
+          html += subs.map(s => `<tr><td>${esc(s.title)}</td><td>${categoryLabel(s.category)}</td><td><span class="badge badge-${s.status}">${statusLabel(s.status)}</span></td><td>${formatTime(s.submitted_at)}</td></tr>`).join('');
+          html += '</tbody></table>';
+        }
+        html += '<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">关闭</button></div>';
+        document.getElementById('modalContent').innerHTML = html;
+        openModal();
+      } catch (err) { alert(err.message); }
+    }
+
+    // ─── Submissions (users) ───
+    async function renderSubmissions() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div class="page-header"><h1>稿件列表</h1><button class="btn btn-primary" onclick="showUpload()">+ 上传稿件</button></div>
+        <div class="card"><div class="table-wrap"><table><thead><tr>
+          <th>作品名</th><th>类型</th><th>提交时间</th><th>状态</th><th>操作</th>
+        </tr></thead><tbody id="subsTableBody"><tr><td colspan="5" class="empty">加载中...</td></tr></tbody></table></div></div>
+      `;
+      loadSubmissions();
+    }
+
+    async function loadSubmissions() {
+      try {
+        const subs = await api('/api/submissions');
+        const tbody = document.getElementById('subsTableBody');
+        if (!subs.length) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty">暂无稿件，点击右上角上传</td></tr>';
+          return;
+        }
+        tbody.innerHTML = subs.map(s => {
+          const canEdit = s.edit_locked_at && new Date(s.edit_locked_at) > new Date() && s.status === 'pending';
+          return `<tr>
+            <td><strong>${esc(s.title)}</strong></td>
+            <td><span class="badge badge-pending">${categoryLabel(s.category)}</span></td>
+            <td>${formatTime(s.submitted_at)}</td>
+            <td><span class="badge badge-${s.status}">${statusLabel(s.status)}</span></td>
+            <td><button class="btn btn-outline btn-sm" onclick="viewMySub(${s.id})">查看</button>${canEdit ? ` <button class="btn btn-primary btn-sm" onclick="editMySub(${s.id})">编辑</button>` : ''}</td>
+          </tr>`;
+        }).join('');
+      } catch (err) {
+        document.getElementById('subsTableBody').innerHTML = `<tr><td colspan="5" class="empty">${err.message}</td></tr>`;
+      }
+    }
+
+    async function viewMySub(id) {
+      try {
+        const s = await api(`/api/submissions/${id}`);
+        const isImage = ['给我刊刊', '字由字在'].includes(s.category);
+        const canEdit = s.can_edit;
+        let html = `
+          <div class="detail-header">
+            <h2>${esc(s.title)}</h2>
+            <span class="badge badge-${s.status}">${categoryLabel(s.category)}</span>
+          </div>
+          <div class="detail-meta">
+            <span>提交时间：${formatTime(s.submitted_at)}</span>
+            <span>状态：<span class="badge badge-${s.status}">${statusLabel(s.status)}</span></span>
+            ${canEdit ? '<span style="color:var(--warning);">⏳ 修改期内可编辑</span>' : ''}
+          </div>
+          ${s.author_name ? `<div class="form-group"><label>作者</label><div class="detail-content">${esc(s.author_name)}</div></div>` : ''}
+          ${s.author_bio ? `<div class="form-group"><label>作者简介</label><div class="detail-content">${esc(s.author_bio)}</div></div>` : ''}
+          ${s.synopsis ? `<div class="form-group"><label>作品梗概</label><div class="detail-content">${esc(s.synopsis)}</div></div>` : ''}
+          ${s.creation_note ? `<div class="form-group"><label>创作思路</label><div class="detail-content">${esc(s.creation_note)}</div></div>` : ''}
+          ${s.content ? `<div class="form-group"><label>作品内容</label><div class="detail-content">${esc(s.content)}</div></div>` : ''}
+          ${isImage && s.file_url ? `<div class="form-group"><label>作品图片</label><img src="${s.file_url}" class="detail-image"></div>` : ''}
+          ${s.file_url && !isImage ? `<div class="form-group"><label>附件</label><a href="${s.file_url}" target="_blank">📄 下载附件</a></div>` : ''}
+          ${s.review_reason ? `<div class="form-group"><label>审核意见</label><div style="padding:12px;background:${s.status==='passed'?'#f6ffed':'#fff2f0'};border-radius:6px;">${esc(s.review_reason)}</div></div>` : ''}
+          <div class="modal-actions">
+            ${canEdit ? `<button class="btn btn-primary" onclick="editMySub(${s.id})">编辑</button>` : ''}
+            <button class="btn btn-outline" onclick="closeModal()">关闭</button>
+          </div>
+        `;
+        document.getElementById('modalContent').innerHTML = html;
+        openModal();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function editMySub(id) {
+      try {
+        const s = await api(`/api/submissions/${id}`);
+        if (!s.can_edit) { alert('已过修改期'); return; }
+        const fields = getFieldsForCategory(s.category);
+        let html = `<h3>编辑：${esc(s.title)}</h3>`;
+        html += `<div class="form-group"><label>作品名</label><input id="euTitle" value="${esc(s.title)}"></div>`;
+        fields.forEach(f => {
+          if (f.key === 'file') return;
+          if (f.type === 'textarea') {
+            html += `<div class="form-group"><label>${f.label}</label><textarea id="eu${f.key}" rows="4">${esc(s[f.key] || '')}</textarea></div>`;
+          } else {
+            html += `<div class="form-group"><label>${f.label}</label><input id="eu${f.key}" value="${esc(s[f.key] || '')}"></div>`;
+          }
+        });
+        html += `<div class="form-group"><label>替换附件（留空保持原文件）</label><input type="file" id="euFile"></div>`;
+        html += `<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveMySub(${id})">保存</button></div>`;
+        document.getElementById('modalContent').innerHTML = html;
+        openModal();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function saveMySub(id) {
+      const fd = new FormData();
+      fd.append('title', document.getElementById('euTitle').value);
+      const fields = ['author_name', 'contact', 'author_bio', 'content', 'synopsis', 'creation_note'];
+      fields.forEach(k => {
+        const el = document.getElementById('eu' + k);
+        if (el) fd.append(k, el.value);
+      });
+      const fileEl = document.getElementById('euFile');
+      if (fileEl && fileEl.files[0]) fd.append('file', fileEl.files[0]);
+      try {
+        await api(`/api/submissions/${id}`, { method: 'PUT', body: fd });
+        alert('修改成功');
+        closeModal();
+        loadSubmissions();
+      } catch (err) { alert(err.message); }
+    }
+
+    function showUpload() {
+      const categories = [
+        { value: '笔哩笔哩', label: '笔哩笔哩 - 不限题材' },
+        { value: '笔上不足', label: '笔上不足 - 短篇小说' },
+        { value: '笔下有娱', label: '笔下有娱 - 长篇小说' },
+        { value: '给我刊刊', label: '给我刊刊 - 美术稿件' },
+        { value: '评评无奇', label: '评评无奇 - 文学评论' },
+        { value: '字由字在', label: '字由字在 - 书法艺术' },
+        { value: '被诗咬了', label: '被诗咬了 - 现代诗歌' },
+        { value: '诗不打烊', label: '诗不打烊 - 古体诗歌' },
+      ];
+      document.getElementById('modalContent').innerHTML = `
+        <h3>上传稿件</h3>
+        <div class="form-group"><label>选择栏目</label>
+          <select id="upCategory" onchange="updateUploadFields()">
+            ${categories.map(c => `<option value="${c.value}">${c.label}</option>`).join('')}
+          </select>
+        </div>
+        <div id="uploadFields"></div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" onclick="closeModal()">取消</button>
+          <button class="btn btn-primary" onclick="submitUpload()">提交</button>
+        </div>
+      `;
+      openModal();
+      updateUploadFields();
+    }
+
+    function getFieldsForCategory(cat) {
+      const base = [
+        { key: 'author_name', label: '作者名', type: 'input' },
+        { key: 'contact', label: '联系方式', type: 'input' },
+        { key: 'author_bio', label: '作者简介', type: 'textarea' },
+      ];
+      switch (cat) {
+        case '笔哩笔哩':
+          return [...base, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件（Word）', type: 'file' }];
+        case '笔上不足':
+          return [...base, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件（Word）', type: 'file' }];
+        case '笔下有娱':
+          return [...base, { key: 'synopsis', label: '作品梗概', type: 'textarea' }, { key: 'creation_note', label: '创作思路', type: 'textarea' }, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件（Word）', type: 'file' }];
+        case '给我刊刊':
+          return [...base, { key: 'content', label: '作品说明', type: 'textarea' }, { key: 'file', label: '作品图片', type: 'file' }];
+        case '评评无奇':
+          return [...base, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件（Word）', type: 'file' }];
+        case '字由字在':
+          return [...base, { key: 'content', label: '释文（篆书/草书必填）', type: 'textarea' }, { key: 'file', label: '作品照片', type: 'file' }];
+        case '被诗咬了':
+          return [...base, { key: 'creation_note', label: '创作思路/背景', type: 'textarea' }, { key: 'file', label: '附件（Word）', type: 'file' }];
+        case '诗不打烊':
+          return [...base, { key: 'file', label: '附件（Word）', type: 'file' }];
+        default:
+          return [...base, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件', type: 'file' }];
+      }
+    }
+
+    function updateUploadFields() {
+      const cat = document.getElementById('upCategory').value;
+      const fields = getFieldsForCategory(cat);
+      document.getElementById('uploadFields').innerHTML = `
+        <div class="form-group"><label>作品名</label><input id="upTitle"></div>
+        ${fields.map(f => {
+          if (f.type === 'textarea') return `<div class="form-group"><label>${f.label}</label><textarea id="up${f.key}" rows="4"></textarea></div>`;
+          if (f.type === 'file') return `<div class="form-group"><label>${f.label}</label><input type="file" id="up${f.key}"></div>`;
+          return `<div class="form-group"><label>${f.label}</label><input id="up${f.key}"></div>`;
+        }).join('')}
+      `;
+    }
+
+    async function submitUpload() {
+      const cat = document.getElementById('upCategory').value;
+      const fd = new FormData();
+      fd.append('category', cat);
+      fd.append('title', document.getElementById('upTitle').value);
+      const fields = getFieldsForCategory(cat);
+      fields.forEach(f => {
+        if (f.key === 'file') {
+          const el = document.getElementById('upfile');
+          if (el && el.files[0]) fd.append('file', el.files[0]);
+        } else {
+          const el = document.getElementById('up' + f.key);
+          if (el) fd.append(f.key, el.value);
+        }
+      });
+      try {
+        await api('/api/submissions', { method: 'POST', body: fd });
+        alert('投稿成功！30分钟内可修改');
+        closeModal();
+        loadSubmissions();
+      } catch (err) { alert(err.message); }
+    }
+
+    // ─── Settings ───
+    async function renderSettings() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = '<div class="page-header"><h1>设置</h1></div><div class="card" id="settingsCard">加载中...</div>';
+      try {
+        const s = await api('/api/settings');
+        document.getElementById('settingsCard').innerHTML = `
+          <div class="form-group"><label>用户名</label><input id="sUsername" value="${esc(s.username)}"></div>
+          <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
+          <h4 style="margin-bottom:16px;">修改密码</h4>
+          <div class="form-group"><label>旧密码</label><input type="password" id="sOldPwd" placeholder="输入旧密码"></div>
+          <div class="form-group"><label>新密码</label><input type="password" id="sNewPwd" placeholder="输入新密码"></div>
+          <div class="form-group"><label>确认新密码</label><input type="password" id="sNewPwd2" placeholder="再次输入新密码"></div>
+          <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+          <span id="sMsg" style="margin-left:12px;font-size:0.85rem;"></span>
+        `;
+      } catch (err) {
+        document.getElementById('settingsCard').textContent = err.message;
+      }
+    }
+
+    async function saveSettings() {
+      const body = { username: document.getElementById('sUsername').value };
+      const oldPwd = document.getElementById('sOldPwd').value;
+      const newPwd = document.getElementById('sNewPwd').value;
+      const newPwd2 = document.getElementById('sNewPwd2').value;
+      if (newPwd || newPwd2 || oldPwd) {
+        if (!oldPwd) {
+          document.getElementById('sMsg').textContent = '请输入旧密码';
+          document.getElementById('sMsg').style.color = 'var(--danger)';
+          return;
+        }
+        if (!newPwd) {
+          document.getElementById('sMsg').textContent = '请输入新密码';
+          document.getElementById('sMsg').style.color = 'var(--danger)';
+          return;
+        }
+        if (newPwd !== newPwd2) {
+          document.getElementById('sMsg').textContent = '两次新密码不一致';
+          document.getElementById('sMsg').style.color = 'var(--danger)';
+          return;
+        }
+        body.old_password = oldPwd;
+        body.password = newPwd;
+      }
+      try {
+        await api('/api/settings', { method: 'PUT', body });
+        document.getElementById('sMsg').textContent = '已保存';
+        document.getElementById('sMsg').style.color = 'var(--success)';
+        document.getElementById('sOldPwd').value = '';
+        document.getElementById('sNewPwd').value = '';
+        document.getElementById('sNewPwd2').value = '';
+        currentUser = await api('/me');
+        renderSidebar();
+      } catch (err) {
+        document.getElementById('sMsg').textContent = err.message;
+        document.getElementById('sMsg').style.color = 'var(--danger)';
+      }
+    }
+
+    // ─── Utils ───
+    function categoryLabel(c) {
+      const map = { '笔哩笔哩': '笔哩笔哩', '笔上不足': '短篇小说', '笔下有娱': '长篇小说', '给我刊刊': '美术稿件', '评评无奇': '文学评论', '字由字在': '书法艺术', '被诗咬了': '现代诗歌', '诗不打烊': '古体诗歌' };
+      return map[c] || c;
+    }
+    function statusLabel(s) {
+      return { pending: '待审核', reviewing: '审核中', passed: '已通过', failed: '未通过' }[s] || s;
+    }
+    function formatTime(t) {
+      if (!t) return '-';
+      return t.replace('T', ' ').substring(0, 16);
+    }
+    function esc(s) {
+      if (!s) return '';
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function openModal() { document.getElementById('modalOverlay').classList.add('show'); }
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+    document.getElementById('modalOverlay').onclick = (e) => { if (e.target === e.currentTarget) closeModal(); };
+
+    // ─── Boot ───
+    initApp();
+  </script>
+</body>
+</html>

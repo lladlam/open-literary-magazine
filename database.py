@@ -1,0 +1,94 @@
+"""Database initialization and models for 请输入文本 magazine."""
+import sqlite3
+import os
+import hashlib
+import secrets
+from datetime import datetime
+
+DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'magazine.db')
+
+def get_db():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    return conn
+
+def hash_password(password, salt=None):
+    if salt is None:
+        salt = secrets.token_hex(16)
+    h = hashlib.sha256((salt + password).encode()).hexdigest()
+    return f"{salt}:{h}"
+
+def verify_password(stored, password):
+    salt, h = stored.split(':')
+    return hash_password(password, salt) == stored
+
+def init_db():
+    conn = get_db()
+    c = conn.cursor()
+
+    c.executescript('''
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'users' CHECK(role IN ('superadmins','admins','users')),
+        avatar TEXT DEFAULT '',
+        banned INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS submissions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        category TEXT NOT NULL,
+        title TEXT NOT NULL,
+        author_name TEXT NOT NULL,
+        contact TEXT NOT NULL,
+        author_bio TEXT DEFAULT '',
+        content TEXT DEFAULT '',
+        synopsis TEXT DEFAULT '',
+        creation_note TEXT DEFAULT '',
+        file_path TEXT DEFAULT '',
+        status TEXT DEFAULT 'pending' CHECK(status IN ('pending','reviewing','passed','failed')),
+        review_reason TEXT DEFAULT '',
+        reviewed_by INTEGER,
+        reviewed_at TIMESTAMP,
+        submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_edited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        edit_locked_at TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (reviewed_by) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
+    ''')
+
+    # Default settings
+    defaults = {
+        'submit_open': '0',
+        'submit_start': '',
+        'submit_end': '',
+        'wait_period_enabled': '1',
+    }
+    for k, v in defaults.items():
+        c.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (k, v))
+
+    # Default admin user
+    existing = c.execute("SELECT id FROM users WHERE username='admin'").fetchone()
+    if not existing:
+        pwd = hash_password('admin')
+        c.execute("INSERT INTO users (username, password, role) VALUES (?, ?, 'superadmins')",
+                  ('admin', pwd))
+
+    conn.commit()
+    conn.close()
+
+if __name__ == '__main__':
+    init_db()
+    print("Database initialized.")
