@@ -601,6 +601,7 @@ def update_settings():
             db.close()
             return jsonify({'error': '旧密码错误'}), 400
         db.execute("UPDATE users SET password=? WHERE id=?", (hash_password(data['password']), g.user['id']))
+        db.execute("DELETE FROM sessions WHERE user_id=?", (g.user["id"],))
     if data.get('avatar') is not None:
         db.execute("UPDATE users SET avatar=? WHERE id=?", (data['avatar'], g.user['id']))
 
@@ -644,4 +645,4 @@ with get_db() as conn:
     conn.commit()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=7675, debug=True)
+    app.run(host='0.0.0.0', port=7675, debug=False)

@@ -562,8 +562,9 @@
 
     async function fetchWithAuth(url, filename) {
       try {
-        const sep = url.includes('?') ? '&' : '?';
-        const res = await fetch(url + sep + 'token=' + encodeURIComponent(token));
+        const res = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
         if (!res.ok) {
           const err = await res.json();
           alert(err.error || '下载失败');

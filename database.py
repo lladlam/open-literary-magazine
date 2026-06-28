@@ -1,8 +1,7 @@
 """Database initialization and models for 请输入文本 magazine."""
 import sqlite3
 import os
-import hashlib
-import secrets
+import bcrypt
 from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'magazine.db')
@@ -15,21 +14,20 @@ def get_db():
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
-def hash_password(password, salt=None):
-    if salt is None:
-        salt = secrets.token_hex(16)
-    h = hashlib.sha256((salt + password).encode()).hexdigest()
-    return f"{salt}:{h}"
+def hash_password(password):
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def verify_password(stored, password):
-    salt, h = stored.split(':')
-    return hash_password(password, salt) == stored
+    try:
+        return bcrypt.checkpw(password.encode(), stored.encode())
+    except Exception:
+        return False
 
 def init_db():
     conn = get_db()
     c = conn.cursor()
 
-    c.executescript('''
+    c.executescript("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -67,9 +65,8 @@ def init_db():
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
     );
-    ''')
+    """)
 
-    # Default settings
     defaults = {
         'submit_open': '0',
         'submit_start': '',
@@ -79,7 +76,6 @@ def init_db():
     for k, v in defaults.items():
         c.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (k, v))
 
-    # Default admin user
     existing = c.execute("SELECT id FROM users WHERE username='admin'").fetchone()
     if not existing:
         pwd = hash_password('admin')
