@@ -16,6 +16,33 @@ CORS(app)
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+ALLOWED_EXTENSIONS = {
+    '笔哩笔哩': {'.doc', '.docx', '.txt', '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'},
+    '笔上不足': {'.doc', '.docx', '.txt', '.pdf'},
+    '笔下有娱': {'.doc', '.docx', '.txt', '.pdf'},
+    '给我刊刊': {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'},
+    '评评无奇': {'.doc', '.docx', '.txt', '.pdf'},
+    '字由字在': {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'},
+    '被诗咬了': {'.doc', '.docx', '.txt', '.pdf'},
+    '诗不打烊': {'.doc', '.docx', '.txt', '.pdf'},
+}
+
+def validate_upload(f, category):
+    if not f or not f.filename:
+        return True, ''
+    ext = os.path.splitext(f.filename)[1].lower()
+    allowed = ALLOWED_EXTENSIONS.get(category)
+    if allowed and ext not in allowed:
+        return False, f'不支持的文件格式 {ext}，允许: {", ".join(sorted(allowed))}'
+    f.seek(0, 2)
+    size = f.tell()
+    f.seek(0)
+    if size > MAX_FILE_SIZE:
+        return False, f'文件大小 {size // 1024 // 1024}MB 超过 10MB 限制'
+    return True, ''
+
 # ─── Auth helpers ───
 
 def get_current_user():
@@ -192,6 +219,10 @@ def create_submission():
     if 'file' in request.files:
         f = request.files['file']
         if f.filename:
+            ok, msg = validate_upload(f, category)
+            if not ok:
+                db.close()
+                return jsonify({'error': msg}), 400
             ext = os.path.splitext(f.filename)[1]
             fname = f"{g.user['id']}_{int(datetime.now().timestamp())}{ext}"
             fpath = os.path.join(UPLOAD_DIR, fname)
@@ -255,6 +286,10 @@ def edit_submission(sub_id):
     if 'file' in request.files:
         f = request.files['file']
         if f.filename:
+            ok, msg = validate_upload(f, row['category'])
+            if not ok:
+                db.close()
+                return jsonify({'error': msg}), 400
             # Delete old file
             if file_path:
                 old = os.path.join(UPLOAD_DIR, file_path)

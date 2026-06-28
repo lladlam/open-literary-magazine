@@ -788,7 +788,8 @@
             html += `<div class="form-group"><label>${f.label}</label><input id="eu${f.key}" value="${esc(s[f.key] || '')}"></div>`;
           }
         });
-        html += `<div class="form-group"><label>替换附件（留空保持原文件）</label><input type="file" id="euFile"></div>`;
+        const fileAccept = getFieldsForCategory(s.category).find(f => f.key === 'file');
+        html += `<div class="form-group"><label>替换附件（留空保持原文件）</label><input type="file" id="euFile" accept="${fileAccept ? fileAccept.accept : '*/*'}"></div>`;
         html += `<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveMySub(${id})">保存</button></div>`;
         document.getElementById('modalContent').innerHTML = html;
         openModal();
@@ -849,23 +850,23 @@
       ];
       switch (cat) {
         case '笔哩笔哩':
-          return [...base, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件（Word）', type: 'file' }];
+          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf,.jpg,.jpeg,.png,.gif,.webp' }];
         case '笔上不足':
-          return [...base, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件（Word）', type: 'file' }];
+          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf' }];
         case '笔下有娱':
-          return [...base, { key: 'synopsis', label: '作品梗概', type: 'textarea' }, { key: 'creation_note', label: '创作思路', type: 'textarea' }, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件（Word）', type: 'file' }];
+          return [...base, { key: 'synopsis', label: '作品梗概', type: 'textarea' }, { key: 'creation_note', label: '创作思路', type: 'textarea' }, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf' }];
         case '给我刊刊':
-          return [...base, { key: 'content', label: '作品说明', type: 'textarea' }, { key: 'file', label: '作品图片', type: 'file' }];
+          return [...base, { key: 'content', label: '作品说明', type: 'textarea' }, { key: 'file', label: '作品图片', type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.gif,.webp' }];
         case '评评无奇':
-          return [...base, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件（Word）', type: 'file' }];
+          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf' }];
         case '字由字在':
-          return [...base, { key: 'content', label: '释文（篆书/草书必填）', type: 'textarea' }, { key: 'file', label: '作品照片', type: 'file' }];
+          return [...base, { key: 'content', label: '释文（篆书/草书必填）', type: 'textarea' }, { key: 'file', label: '作品照片', type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.gif,.webp' }];
         case '被诗咬了':
-          return [...base, { key: 'creation_note', label: '创作思路/背景', type: 'textarea' }, { key: 'file', label: '附件（Word）', type: 'file' }];
+          return [...base, { key: 'creation_note', label: '创作思路/背景', type: 'textarea' }, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf' }];
         case '诗不打烊':
-          return [...base, { key: 'file', label: '附件（Word）', type: 'file' }];
+          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf' }];
         default:
-          return [...base, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件', type: 'file' }];
+          return [...base, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件', type: 'file', accept: '*/*' }];
       }
     }
 
@@ -876,10 +877,21 @@
         <div class="form-group"><label>作品名</label><input id="upTitle"></div>
         ${fields.map(f => {
           if (f.type === 'textarea') return `<div class="form-group"><label>${f.label}</label><textarea id="up${f.key}" rows="4"></textarea></div>`;
-          if (f.type === 'file') return `<div class="form-group"><label>${f.label}</label><input type="file" id="up${f.key}"></div>`;
+          if (f.type === 'file') return `<div class="form-group"><label>${f.label}</label><input type="file" id="up${f.key}" accept="${f.accept||'*/*'}"></div>`;
           return `<div class="form-group"><label>${f.label}</label><input id="up${f.key}"></div>`;
         }).join('')}
       `;
+    }
+
+    function validateFile(file, accept, maxSizeMB) {
+      if (!file) return true;
+      if (file.size > maxSizeMB * 1024 * 1024) { alert('文件大小不能超过 ' + maxSizeMB + 'MB'); return false; }
+      if (accept && accept !== '*/*') {
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        const allowed = accept.split(',').map(s => s.trim().toLowerCase());
+        if (!allowed.includes(ext)) { alert('不支持的文件格式: ' + ext); return false; }
+      }
+      return true;
     }
 
     async function submitUpload() {
@@ -888,14 +900,16 @@
       fd.append('category', cat);
       fd.append('title', document.getElementById('upTitle').value);
       const fields = getFieldsForCategory(cat);
+      const fileField = fields.find(f => f.key === 'file');
+      const fileEl = document.getElementById('upfile');
+      if (fileEl && fileEl.files[0]) {
+        if (!validateFile(fileEl.files[0], fileField ? fileField.accept : null, 10)) return;
+        fd.append('file', fileEl.files[0]);
+      }
       fields.forEach(f => {
-        if (f.key === 'file') {
-          const el = document.getElementById('upfile');
-          if (el && el.files[0]) fd.append('file', el.files[0]);
-        } else {
-          const el = document.getElementById('up' + f.key);
-          if (el) fd.append(f.key, el.value);
-        }
+        if (f.key === 'file') return;
+        const el = document.getElementById('up' + f.key);
+        if (el) fd.append(f.key, el.value);
       });
       try {
         await api('/api/submissions', { method: 'POST', body: fd });
