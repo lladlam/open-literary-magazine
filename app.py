@@ -317,13 +317,17 @@ def review_list():
     sort = request.args.get('sort', 'time')  # time or category
     status = request.args.get('status', 'all')
     db = get_db()
-    # Hide submissions in waiting period (status='reviewing' means waiting period)
-    query = "SELECT s.id, s.title, s.category, s.status, s.submitted_at, u.username FROM submissions s JOIN users u ON s.user_id=u.id WHERE s.status != 'reviewing'"
+    # Hide submissions still within waiting period
+    query = "SELECT s.id, s.title, s.category, CASE WHEN s.status='reviewing' AND s.edit_locked_at <= datetime('now') THEN 'pending' ELSE s.status END as status, s.submitted_at, u.username FROM submissions s JOIN users u ON s.user_id=u.id WHERE NOT (s.status = 'reviewing' AND s.edit_locked_at > datetime('now'))"
     params = []
     conditions = []
     if status != 'all':
-        conditions.append("s.status=?")
-        params.append(status)
+        if status == 'pending':
+            conditions.append("(s.status=? OR (s.status='reviewing' AND s.edit_locked_at <= datetime('now')))")
+            params.append(status)
+        else:
+            conditions.append("s.status=?")
+            params.append(status)
     if conditions:
         query += " AND " + " AND ".join(conditions)
     if sort == 'category':
@@ -401,7 +405,7 @@ def review_download():
     sort = request.args.get('sort', 'time')
     status = request.args.get('status', 'all')
     db = get_db()
-    query = "SELECT s.*, u.username FROM submissions s JOIN users u ON s.user_id=u.id WHERE s.status != 'reviewing'"
+    query = "SELECT s.*, CASE WHEN s.status='reviewing' AND s.edit_locked_at <= datetime('now') THEN 'pending' ELSE s.status END as display_status, u.username FROM submissions s JOIN users u ON s.user_id=u.id WHERE NOT (s.status = 'reviewing' AND s.edit_locked_at > datetime('now'))"
     params = []
     if status != 'all':
         query += " AND s.status=?"
@@ -422,7 +426,7 @@ def review_download():
         for r in rows:
             writer.writerow([
                 r['title'], r['category'], r['author_name'], r['contact'],
-                r['submitted_at'], r['status'], r['review_reason'] or ''
+                r['submitted_at'], r['display_status'], r['review_reason'] or ''
             ])
         zf.writestr('稿件汇总.csv', csv_buf.getvalue().encode('utf-8-sig'))
 
