@@ -28,7 +28,24 @@ request_logger.addHandler(_handler)
 @app.before_request
 def log_request():
     if request.path.startswith('/api/') and request.path != '/api/submit-status':
-        request_logger.info(f'{request.remote_addr} {request.method} {request.path}')
+        ip = request.remote_addr
+        method = request.method
+        path = request.path
+        username = '-'
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        if token:
+            try:
+                db = get_db()
+                row = db.execute(
+                    "SELECT u.username FROM users u JOIN sessions s ON u.id=s.user_id WHERE s.token=?",
+                    (token,)
+                ).fetchone()
+                if row:
+                    username = row['username']
+                db.close()
+            except Exception:
+                pass
+        request_logger.info(f'{ip} {username} {method} {path}')
 
 # ─── Signed URL for uploads ───
 UPLOAD_SECRET = app.secret_key[:32]
