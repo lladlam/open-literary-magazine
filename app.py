@@ -65,6 +65,18 @@ def verify_signed_url(filename, exp, sig):
     expected = hmac.new(UPLOAD_SECRET.encode(), f'{filename}:{exp}'.encode(), hashlib.sha256).hexdigest()[:16]
     return hmac.compare_digest(sig, expected)
 
+def audit_log(action, target='', detail=''):
+    try:
+        db = get_db()
+        uid = getattr(g, 'user', {}).get('id') if hasattr(g, 'user') and g.user else None
+        uname = getattr(g, 'user', {}).get('username', '-') if hasattr(g, 'user') and g.user else '-'
+        db.execute("INSERT INTO audit_log (user_id, username, action, target, detail) VALUES (?, ?, ?, ?, ?)",
+                   (uid, uname, action, target, detail))
+        db.commit()
+        db.close()
+    except Exception:
+        pass
+
 CORS(app, origins=['https://open.lladlam.top'])
 
 # ─── Rate limiter (in-memory) ───
@@ -169,6 +181,15 @@ def get_logs():
         lines = f.readlines()
     limit = min(int(request.args.get('limit', '200')), 1000)
     return jsonify({'logs': ''.join(lines[-limit:])})
+
+@app.route('/api/audit', methods=['GET'])
+@role_required('superadmins')
+def get_audit():
+    db = get_db()
+    limit = min(int(request.args.get('limit', '100')), 500)
+    rows = db.execute("SELECT * FROM audit_log ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+    db.close()
+    return jsonify([dict(r) for r in rows])
 
 # ─── Auth routes ───
 
@@ -478,6 +499,7 @@ def review_action(sub_id):
         (status, reason, g.user['id'], sub_id))
     db.commit()
     db.close()
+    audit_log('review', f'submission#{sub_id}', f'{"通过" if action=="pass" else "不通过"}: {reason}')
     return jsonify({'message': f'已{"通过" if action=="pass" else "不通过"}，30分钟内可更改'})
 
 @app.route('/api/review/<int:sub_id>/revoke', methods=['POST'])
@@ -497,6 +519,7 @@ def review_revoke(sub_id):
     db.execute("UPDATE submissions SET status='reviewing', review_reason='', reviewed_by=NULL, reviewed_at=NULL WHERE id=?", (sub_id,))
     db.commit()
     db.close()
+    audit_log('revoke', f'submission#{sub_id}', '撤回审核结果')
     return jsonify({'message': '已撤回审核结果'})
 
 @app.route('/api/review/download', methods=['GET'])
@@ -639,6 +662,7 @@ def create_user():
                (username, hash_password(password), role))
     db.commit()
     db.close()
+    audit_log('create_user', username, f'角色: {role}')
     return jsonify({'message': '用户创建成功'})
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
@@ -667,6 +691,11 @@ def update_user(user_id):
         db.execute("UPDATE users SET banned=? WHERE id=?", (1 if data['banned'] else 0, user_id))
     db.commit()
     db.close()
+    changes = []
+    if data.get('password'): changes.append('改密码')
+    if data.get('role'): changes.append(f'角色→{data["role"]}')
+    if 'banned' in data: changes.append(f'{"封禁" if data["banned"] else "解封"}')
+    audit_log('update_user', user['username'], ', '.join(changes) if changes else '无变更')
     return jsonify({'message': '更新成功'})
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
@@ -685,6 +714,7 @@ def delete_user(user_id):
     db.execute("DELETE FROM users WHERE id=?", (user_id,))
     db.commit()
     db.close()
+    audit_log('delete_user', user['username'], f'角色: {user["role"]}')
     return jsonify({'message': '用户已删除'})
 
 @app.route('/api/users/<int:user_id>/submissions', methods=['GET'])
@@ -763,6 +793,13 @@ def update_settings():
 
     db.commit()
     db.close()
+    changes = []
+    if data.get('username'): changes.append(f'用户名→{data["username"]}')
+    if data.get('password'): changes.append('改密码')
+    admin_keys = [k for k in ('submit_open', 'submit_start', 'submit_end', 'wait_period_enabled') if k in data]
+    if admin_keys: changes.append(f'系统设置: {", ".join(admin_keys)}')
+    if changes:
+        audit_log('update_settings', 'self', ', '.join(changes))
     return jsonify({'message': '设置已更新'})
 
 # ─── Static files ───

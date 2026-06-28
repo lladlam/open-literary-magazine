@@ -316,6 +316,7 @@
           { id: 'review', icon: '📋', label: '稿件审核' },
           { id: 'users', icon: '👥', label: '用户管理' },
           { id: 'logs', icon: '📝', label: '请求日志' },
+          { id: 'audit', icon: '🔍', label: '审计日志' },
           { id: 'settings', icon: '⚙️', label: '设置' },
         ];
       } else if (role === 'admins') {
@@ -337,7 +338,7 @@
     function navigate(page) {
       currentPage = page;
       document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
-      const renderers = { dashboard: renderDashboard, 'open-time': renderOpenTime, review: renderReview, users: renderUsers, logs: renderLogs, submissions: renderSubmissions, settings: renderSettings };
+      const renderers = { dashboard: renderDashboard, 'open-time': renderOpenTime, review: renderReview, users: renderUsers, logs: renderLogs, audit: renderAudit, submissions: renderSubmissions, settings: renderSettings };
       if (renderers[page]) renderers[page]();
     }
 
@@ -746,6 +747,52 @@
         document.getElementById('logContent').textContent = data.logs || '暂无日志';
       } catch (err) {
         document.getElementById('logContent').textContent = err.message;
+      }
+    }
+
+    // ─── Audit Log ───
+    async function renderAudit() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div class="page-header"><h1>审计日志</h1>
+          <div>
+            <select id="auditLimit" onchange="loadAudit()" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;">
+              <option value="50">最近50条</option>
+              <option value="100" selected>最近100条</option>
+              <option value="200">最近200条</option>
+              <option value="500">最近500条</option>
+            </select>
+            <button class="btn btn-outline" onclick="loadAudit()" style="margin-left:8px;">刷新</button>
+          </div>
+        </div>
+        <div class="card"><div class="table-wrap"><table><thead><tr>
+          <th>时间</th><th>操作人</th><th>操作</th><th>目标</th><th>详情</th>
+        </tr></thead><tbody id="auditTableBody"><tr><td colspan="5" class="empty">加载中...</td></tr></tbody></table></div></div>
+      `;
+      loadAudit();
+    }
+
+    async function loadAudit() {
+      const limit = document.getElementById('auditLimit').value;
+      try {
+        const list = await api(`/api/audit?limit=${limit}`);
+        const tbody = document.getElementById('auditTableBody');
+        if (!list.length) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty">暂无审计记录</td></tr>';
+          return;
+        }
+        const actionMap = { review: '审核稿件', revoke: '撤回审核', create_user: '创建用户', update_user: '更新用户', delete_user: '删除用户', update_settings: '更新设置' };
+        tbody.innerHTML = list.map(r => `
+          <tr>
+            <td>${formatTime(r.created_at)}</td>
+            <td><strong>${esc(r.username)}</strong></td>
+            <td><span class="badge badge-reviewing">${actionMap[r.action] || r.action}</span></td>
+            <td>${esc(r.target)}</td>
+            <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">${esc(r.detail)}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        document.getElementById('auditTableBody').innerHTML = `<tr><td colspan="5" class="empty">${err.message}</td></tr>`;
       }
     }
 
