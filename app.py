@@ -808,8 +808,10 @@ def update_settings():
     changes = []
     if data.get('username'): changes.append(f'用户名→{data["username"]}')
     if data.get('password'): changes.append('改密码')
-    admin_keys = [k for k in ('submit_open', 'submit_start', 'submit_end', 'wait_period_enabled') if k in data]
-    if admin_keys: changes.append(f'系统设置: {", ".join(admin_keys)}')
+    label_map = {'submit_open': '投稿开关', 'submit_start': '开始时间', 'submit_end': '结束时间', 'wait_period_enabled': '等待期'}
+    for k in ('submit_open', 'submit_start', 'submit_end', 'wait_period_enabled'):
+        if k in data:
+            changes.append(f'{label_map[k]}→{data[k]}')
     if changes:
         audit_log('update_settings', 'self', ', '.join(changes))
     return jsonify({'message': '设置已更新'})
