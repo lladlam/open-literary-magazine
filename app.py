@@ -19,14 +19,14 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 ALLOWED_EXTENSIONS = {
-    '笔哩笔哩': {'.doc', '.docx', '.txt', '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'},
-    '笔上不足': {'.doc', '.docx', '.txt', '.pdf'},
-    '笔下有娱': {'.doc', '.docx', '.txt', '.pdf'},
-    '给我刊刊': {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'},
-    '评评无奇': {'.doc', '.docx', '.txt', '.pdf'},
-    '字由字在': {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'},
-    '被诗咬了': {'.doc', '.docx', '.txt', '.pdf'},
-    '诗不打烊': {'.doc', '.docx', '.txt', '.pdf'},
+    '笔哩笔哩': {'.doc', '.docx', '.txt', '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.zip', '.rar', '.7z'},
+    '笔上不足': {'.doc', '.docx', '.txt', '.pdf', '.zip', '.rar', '.7z'},
+    '笔下有娱': {'.doc', '.docx', '.txt', '.pdf', '.zip', '.rar', '.7z'},
+    '给我刊刊': {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.zip', '.rar', '.7z'},
+    '评评无奇': {'.doc', '.docx', '.txt', '.pdf', '.zip', '.rar', '.7z'},
+    '字由字在': {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.zip', '.rar', '.7z'},
+    '被诗咬了': {'.doc', '.docx', '.txt', '.pdf', '.zip', '.rar', '.7z'},
+    '诗不打烊': {'.doc', '.docx', '.txt', '.pdf', '.zip', '.rar', '.7z'},
 }
 
 def validate_upload(f, category):

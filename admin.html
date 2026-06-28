@@ -805,7 +805,10 @@
         if (el) fd.append(k, el.value);
       });
       const fileEl = document.getElementById('euFile');
-      if (fileEl && fileEl.files[0]) fd.append('file', fileEl.files[0]);
+      if (fileEl && fileEl.files[0]) {
+        if (!validateFile(fileEl.files[0], fileEl.accept || null, 10)) return;
+        fd.append('file', fileEl.files[0]);
+      }
       try {
         await api(`/api/submissions/${id}`, { method: 'PUT', body: fd });
         alert('修改成功');
@@ -850,21 +853,21 @@
       ];
       switch (cat) {
         case '笔哩笔哩':
-          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf,.jpg,.jpeg,.png,.gif,.webp' }];
+          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.7z' }];
         case '笔上不足':
-          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf' }];
+          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf,.zip,.rar,.7z' }];
         case '笔下有娱':
-          return [...base, { key: 'synopsis', label: '作品梗概', type: 'textarea' }, { key: 'creation_note', label: '创作思路', type: 'textarea' }, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf' }];
+          return [...base, { key: 'synopsis', label: '作品梗概', type: 'textarea' }, { key: 'creation_note', label: '创作思路', type: 'textarea' }, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf,.zip,.rar,.7z' }];
         case '给我刊刊':
-          return [...base, { key: 'content', label: '作品说明', type: 'textarea' }, { key: 'file', label: '作品图片', type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.gif,.webp' }];
+          return [...base, { key: 'content', label: '作品说明', type: 'textarea' }, { key: 'file', label: '作品图片', type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.7z' }];
         case '评评无奇':
-          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf' }];
+          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf,.zip,.rar,.7z' }];
         case '字由字在':
-          return [...base, { key: 'content', label: '释文（篆书/草书必填）', type: 'textarea' }, { key: 'file', label: '作品照片', type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.gif,.webp' }];
+          return [...base, { key: 'content', label: '释文（篆书/草书必填）', type: 'textarea' }, { key: 'file', label: '作品照片', type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.7z' }];
         case '被诗咬了':
-          return [...base, { key: 'creation_note', label: '创作思路/背景', type: 'textarea' }, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf' }];
+          return [...base, { key: 'creation_note', label: '创作思路/背景', type: 'textarea' }, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf,.zip,.rar,.7z' }];
         case '诗不打烊':
-          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf' }];
+          return [...base, { key: 'file', label: '附件', type: 'file', accept: '.doc,.docx,.txt,.pdf,.zip,.rar,.7z' }];
         default:
           return [...base, { key: 'content', label: '作品内容', type: 'textarea' }, { key: 'file', label: '附件', type: 'file', accept: '*/*' }];
       }
