@@ -315,6 +315,7 @@
           { id: 'open-time', icon: '🕐', label: '开放时间' },
           { id: 'review', icon: '📋', label: '稿件审核' },
           { id: 'users', icon: '👥', label: '用户管理' },
+          { id: 'logs', icon: '📝', label: '请求日志' },
           { id: 'settings', icon: '⚙️', label: '设置' },
         ];
       } else if (role === 'admins') {
@@ -336,7 +337,7 @@
     function navigate(page) {
       currentPage = page;
       document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
-      const renderers = { dashboard: renderDashboard, 'open-time': renderOpenTime, review: renderReview, users: renderUsers, submissions: renderSubmissions, settings: renderSettings };
+      const renderers = { dashboard: renderDashboard, 'open-time': renderOpenTime, review: renderReview, users: renderUsers, logs: renderLogs, submissions: renderSubmissions, settings: renderSettings };
       if (renderers[page]) renderers[page]();
     }
 
@@ -716,6 +717,36 @@
         document.getElementById('modalContent').innerHTML = html;
         openModal();
       } catch (err) { alert(err.message); }
+    }
+
+    // ─── Logs ───
+    async function renderLogs() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div class="page-header"><h1>请求日志</h1>
+          <div>
+            <select id="logLimit" onchange="loadLogs()" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;">
+              <option value="100">最近100条</option>
+              <option value="200" selected>最近200条</option>
+              <option value="500">最近500条</option>
+              <option value="1000">最近1000条</option>
+            </select>
+            <button class="btn btn-outline" onclick="loadLogs()" style="margin-left:8px;">刷新</button>
+          </div>
+        </div>
+        <div class="card"><pre id="logContent" style="max-height:70vh;overflow:auto;font-size:0.8rem;line-height:1.6;white-space:pre-wrap;">加载中...</pre></div>
+      `;
+      loadLogs();
+    }
+
+    async function loadLogs() {
+      const limit = document.getElementById('logLimit').value;
+      try {
+        const data = await api(`/api/logs?limit=${limit}`);
+        document.getElementById('logContent').textContent = data.logs || '暂无日志';
+      } catch (err) {
+        document.getElementById('logContent').textContent = err.message;
+      }
     }
 
     // ─── Submissions (users) ───
