@@ -104,7 +104,7 @@ def init_db():
         action TEXT NOT NULL,
         target TEXT DEFAULT '',
         detail TEXT DEFAULT '',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id)
     );
     """)

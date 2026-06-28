@@ -18,15 +18,26 @@ app.secret_key = secrets.token_hex(32)
 
 # ─── Request logging (superadmins only) ───
 import logging.handlers
+import logging as _logging
+from zoneinfo import ZoneInfo
+
 LOG_DIR = os.path.join(os.path.dirname(__file__), 'data')
 os.makedirs(LOG_DIR, exist_ok=True)
+
+class BeijingFormatter(_logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        ct = datetime.fromtimestamp(record.created, tz=ZoneInfo('Asia/Shanghai'))
+        if datefmt:
+            return ct.strftime(datefmt)
+        return ct.strftime('%Y-%m-%d %H:%M:%S')
+
 request_logger = logging.getLogger('request_log')
 request_logger.setLevel(logging.INFO)
 _handler = logging.handlers.TimedRotatingFileHandler(
     os.path.join(LOG_DIR, 'requests.log'),
     when='midnight', interval=1, backupCount=7, encoding='utf-8'
 )
-_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
+_handler.setFormatter(BeijingFormatter('%(asctime)s %(message)s'))
 request_logger.addHandler(_handler)
 
 @app.before_request
@@ -70,8 +81,9 @@ def audit_log(action, target='', detail=''):
         db = get_db()
         uid = getattr(g, 'user', {}).get('id') if hasattr(g, 'user') and g.user else None
         uname = getattr(g, 'user', {}).get('username', '-') if hasattr(g, 'user') and g.user else '-'
-        db.execute("INSERT INTO audit_log (user_id, username, action, target, detail) VALUES (?, ?, ?, ?, ?)",
-                   (uid, uname, action, target, detail))
+        now = datetime.now(tz=ZoneInfo('Asia/Shanghai')).strftime('%Y-%m-%d %H:%M:%S')
+        db.execute("INSERT INTO audit_log (user_id, username, action, target, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                   (uid, uname, action, target, detail, now))
         db.commit()
         db.close()
     except Exception:
