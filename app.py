@@ -17,18 +17,22 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = secrets.token_hex(32)
 
 # ─── Request logging (superadmins only) ───
+import logging.handlers
 LOG_DIR = os.path.join(os.path.dirname(__file__), 'data')
 os.makedirs(LOG_DIR, exist_ok=True)
 request_logger = logging.getLogger('request_log')
 request_logger.setLevel(logging.INFO)
-_handler = logging.FileHandler(os.path.join(LOG_DIR, 'requests.log'))
+_handler = logging.handlers.TimedRotatingFileHandler(
+    os.path.join(LOG_DIR, 'requests.log'),
+    when='midnight', interval=1, backupCount=7, encoding='utf-8'
+)
 _handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
 request_logger.addHandler(_handler)
 
 @app.before_request
 def log_request():
     if request.path.startswith('/api/') and request.path != '/api/submit-status':
-        ip = request.remote_addr
+        ip = request.headers.get('X-Real-IP', request.remote_addr)
         method = request.method
         path = request.path
         username = '-'
